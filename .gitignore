@@ -1,3 +1,30 @@
-config.py
-app.db
+# Python
+__pycache__/
+*.py[cod]
+*.egg
+*.egg-info/
+dist/
+build/
+
+# Virtual environments
+venv/
 .venv/
+env/
+.env/
+ENV/
+
+# SQLite DB
+app.db
+
+# Configs (если не хочешь публиковать)
+config.py
+
+# VS Code
+.vscode/
+
+# PyCharm
+.idea/
+
+# System files
+.DS_Store
+Thumbs.db
