@@ -8,11 +8,12 @@ import AdminDashboard from "./pages/AdminDashboard";
 import NotFoundPage from "./pages/NotFoundPage";
 import AnalyzePage from "./pages/AnalyzePage";
 import LogsPage from "./pages/LogsPage";
+import LogEntriesPage from "./pages/LogDetailPage.tsx";
+import ExportLogsPage from "./pages/ExportLogsPage";
 
 import ProtectedRoute from "./ProtectedRoute";
 import AdminRoute from "./AdminRoute";
 import { AuthProvider } from "./AuthContext";
-
 import "./index.css";
 
 const App: React.FC = () => {
@@ -55,6 +56,24 @@ const App: React.FC = () => {
             element={
               <ProtectedRoute>
                 <LogsPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/logs/:logfileId"
+            element={
+              <ProtectedRoute>
+                <LogEntriesPage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/export"
+            element={
+              <ProtectedRoute>
+                <ExportLogsPage />
               </ProtectedRoute>
             }
           />

@@ -1,15 +1,23 @@
-from flask import Blueprint, request, jsonify
-from flask_jwt_extended import jwt_required, get_jwt_identity
 from werkzeug.utils import secure_filename
-import os
 from pathlib import Path
 from tempfile import mkdtemp
+from app.utils.parser import parse_log_file
+from flask import Blueprint, request, jsonify, send_file
+from flask_jwt_extended import jwt_required, get_jwt_identity
+from datetime import datetime
+from io import BytesIO
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+from reportlab.lib.units import mm
+from flask import send_file
+from app.utils.pdf_utils import generate_log_pdf
+from io import BytesIO
+from datetime import datetime
+
 
 from app.extensions import db
 from app.models.logfile import LogFile
 from app.models.logentry import LogEntry
-from app.utils.parser import parse_log_file
-
 log_bp = Blueprint("logs", __name__, url_prefix="/api/logs")
 
 UPLOAD_FOLDER = mkdtemp()
@@ -118,3 +126,81 @@ def get_log_entries(logfile_id):
 
     entries = LogEntry.query.filter_by(logfile_id=logfile_id).all()
     return jsonify([entry.to_dict() for entry in entries])
+@log_bp.route("/export-pdf", methods=["POST"])
+@jwt_required()
+def export_logs_to_pdf():
+    user_id = int(get_jwt_identity())
+    data = request.get_json()
+    start = data.get("start_date")
+    end = data.get("end_date")
+
+    try:
+        start_dt = datetime.fromisoformat(start)
+        end_dt = datetime.fromisoformat(end)
+    except Exception:
+        return jsonify({"error": "Неверный формат даты"}), 400
+
+    entries = LogEntry.query.join(LogFile).filter(
+        LogFile.user_id == user_id,
+        LogEntry.timestamp >= start_dt,
+        LogEntry.timestamp <= end_dt
+    ).order_by(LogEntry.timestamp.asc()).all()
+
+    if not entries:
+        return jsonify({"error": "Нет логов в заданном диапазоне"}), 404
+
+    buffer = BytesIO()
+    pdf = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+
+    pdf.setTitle("Logs for period")
+    pdf.setFont("Helvetica-Bold", 14)
+    pdf.drawCentredString(width / 2, height - 30, "Log Report")
+
+    # Таблица: координаты и отступы
+    x_start = 30
+    y_start = height - 60
+    row_height = 20
+    col_widths = [90, 70, 60, 60, 60, 80]  # ширина колонок
+    headers = ["Date", "Version", "BW", "F-start", "F-end", "Detected Freq"]
+
+    def draw_row(y, values, bold=False):
+        font = "Helvetica-Bold" if bold else "Helvetica"
+        pdf.setFont(font, 8)
+        x = x_start
+        for i, text in enumerate(values):
+            pdf.rect(x, y - row_height, col_widths[i], row_height)  # рамка
+            pdf.drawString(x + 2, y - row_height + 5, str(text))
+            x += col_widths[i]
+
+    # Заголовки
+    draw_row(y_start, headers, bold=True)
+    y = y_start - row_height
+
+    for entry in entries:
+        row = [
+            entry.timestamp.strftime("%d.%m.%Y %H:%M"),
+            entry.version,
+            f"{entry.bandwidth:.2f}",
+            f"{entry.freq_start:.2f}",
+            f"{entry.freq_end:.2f}",
+            f"{entry.detected_freq:.2f}"
+        ]
+        draw_row(y, row)
+        y -= row_height
+
+        if y < 40:
+            pdf.showPage()
+            y = height - 40
+            draw_row(y, headers, bold=True)
+            y -= row_height
+
+    pdf.save()
+    buffer.seek(0)
+
+    return send_file(
+        buffer,
+        mimetype='application/pdf',
+        as_attachment=True,
+        download_name="logs_report.pdf"
+    )
