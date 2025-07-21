@@ -1,34 +1,32 @@
 import React, { useState } from "react";
 import { useAuth } from "../AuthContext";
-import { useNavigate } from "react-router-dom";
+import { motion } from "framer-motion";
 
 const AnalyzePage: React.FC = () => {
   const { token } = useAuth();
-  const navigate = useNavigate();
-
   const [file, setFile] = useState<File | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFile(e.target.files?.[0] || null);
     setMessage(null);
     setError(null);
-    if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
-    }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!file || !token) return;
+  const handleUpload = async () => {
+    if (!file) return;
+
+    if (!file.name.endsWith(".txt") && !file.name.endsWith(".log")) {
+      setError("Можно загружать только .txt или .log файлы");
+      return;
+    }
 
     const formData = new FormData();
     formData.append("file", file);
 
-    setIsLoading(true);
     try {
-      const response = await fetch("http://localhost:5000/api/logs/analyze", {
+      const res = await fetch("http://localhost:5000/api/logs/analyze", {
         method: "POST",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -36,32 +34,47 @@ const AnalyzePage: React.FC = () => {
         body: formData,
       });
 
-      const data = await response.json();
+      const data = await res.json();
 
-      if (!response.ok) {
-        setError(data.error || "Ошибка анализа");
+      if (res.ok) {
+        setMessage(data.message);
+        setFile(null);
       } else {
-        setMessage(data.message || "Файл успешно проанализирован");
-        setTimeout(() => navigate("/dashboard"), 2000);
+        setError(data.error || "Ошибка при анализе");
       }
     } catch (err) {
-      setError("Ошибка отправки запроса");
-    } finally {
-      setIsLoading(false);
+      setError("Ошибка отправки файла");
     }
   };
 
   return (
-    <div>
-      <h2>Анализ лог-файла</h2>
-      <form onSubmit={handleSubmit}>
-        <input type="file" accept=".txt,.log" onChange={handleFileChange} required />
-        <button type="submit" disabled={isLoading}>
-          {isLoading ? "Анализ..." : "Проанализировать"}
+    <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center px-4">
+      <motion.div
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="bg-gray-800 p-8 rounded-2xl shadow-lg w-full max-w-xl text-center"
+      >
+        <h2 className="text-2xl font-bold mb-4">Загрузка и анализ лога</h2>
+
+        <input
+          type="file"
+          accept=".txt,.log"
+          onChange={handleFileChange}
+          className="mb-4 w-full text-sm text-gray-300 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"
+        />
+
+        <button
+          onClick={handleUpload}
+          disabled={!file}
+          className="bg-blue-600 hover:bg-blue-700 transition-all duration-300 px-6 py-2 rounded-lg font-semibold disabled:opacity-50"
+        >
+          Проанализировать
         </button>
-      </form>
-      {message && <p style={{ color: "green" }}>{message}</p>}
-      {error && <p style={{ color: "red" }}>{error}</p>}
+
+        {message && <p className="mt-4 text-green-400">{message}</p>}
+        {error && <p className="mt-4 text-red-500">{error}</p>}
+      </motion.div>
     </div>
   );
 };

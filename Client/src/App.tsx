@@ -7,10 +7,13 @@ import UserDashboard from "./pages/UserDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import NotFoundPage from "./pages/NotFoundPage";
 import AnalyzePage from "./pages/AnalyzePage";
+import LogsPage from "./pages/LogsPage";
 
 import ProtectedRoute from "./ProtectedRoute";
 import AdminRoute from "./AdminRoute";
-import { AuthProvider } from "./AuthContext"; // ✅ не забудь про AuthContext
+import { AuthProvider } from "./AuthContext";
+
+import "./index.css";
 
 const App: React.FC = () => {
   return (
@@ -43,6 +46,15 @@ const App: React.FC = () => {
             element={
               <ProtectedRoute>
                 <AnalyzePage />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/logs"
+            element={
+              <ProtectedRoute>
+                <LogsPage />
               </ProtectedRoute>
             }
           />

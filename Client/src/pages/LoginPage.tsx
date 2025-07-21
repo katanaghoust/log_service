@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { useAuth } from "../AuthContext";
 import { useNavigate } from "react-router-dom";
-import { jwtDecode } from "jwt-decode"; // <-- правильный импорт
 
 const LoginPage: React.FC = () => {
   const { login } = useAuth();
@@ -31,39 +30,47 @@ const LoginPage: React.FC = () => {
 
       login(data.token);
 
-      const decoded: any = jwtDecode(data.token);
+      const decoded: any = JSON.parse(atob(data.token.split(".")[1]));
       if (decoded.role === "admin") {
         navigate("/admin");
       } else {
         navigate("/dashboard");
       }
     } catch (err) {
-      console.error(err);
       setError("Ошибка входа");
     }
   };
 
   return (
-    <div>
-      <h2>Вход</h2>
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          placeholder="Имя пользователя"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          required
-        />
-        <input
-          type="password"
-          placeholder="Пароль"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        <button type="submit">Войти</button>
-        {error && <p style={{ color: "red" }}>{error}</p>}
-      </form>
+    <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center px-4">
+      <div className="w-full max-w-md bg-gray-800 p-8 rounded-2xl shadow-lg">
+        <h2 className="text-3xl font-bold text-center mb-6">Вход</h2>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <input
+            type="text"
+            placeholder="Имя пользователя"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            required
+            className="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-600"
+          />
+          <input
+            type="password"
+            placeholder="Пароль"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            className="w-full p-3 rounded-lg bg-gray-700 border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-600"
+          />
+          <button
+            type="submit"
+            className="w-full py-3 bg-blue-600 hover:bg-blue-700 rounded-lg font-semibold transition-all duration-300"
+          >
+            Войти
+          </button>
+        </form>
+        {error && <p className="text-red-400 mt-4 text-center">{error}</p>}
+      </div>
     </div>
   );
 };
