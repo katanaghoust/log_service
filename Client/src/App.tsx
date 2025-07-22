@@ -8,7 +8,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import NotFoundPage from "./pages/NotFoundPage";
 import AnalyzePage from "./pages/AnalyzePage";
 import LogsPage from "./pages/LogsPage";
-import LogEntriesPage from "./pages/LogDetailPage.tsx";
+import LogEntriesPage from "./pages/LogDetailsPage.tsx";
 import ExportLogsPage from "./pages/ExportLogsPage";
 
 import ProtectedRoute from "./ProtectedRoute";
